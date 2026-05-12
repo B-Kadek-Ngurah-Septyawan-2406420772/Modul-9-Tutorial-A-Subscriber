@@ -43,3 +43,21 @@ From the publisher code, one improvement is to avoid hardcoding repeated event d
 In the cloud experiment, RabbitMQ was running on a Google Cloud VM while the publisher and subscriber connected to it through the VM public IP. The subscriber still used the one-second processing delay, so it could not consume messages as fast as the publisher sent them. In the RabbitMQ cloud chart, the total queued messages rose to 10, stayed there briefly, and then went back down to 0 as the subscriber processed the messages one by one.
 
 The chart also showed 5 connections, 5 channels, 1 queue, and 1 consumer. The most important part is that there was only 1 consumer, so all messages had to be processed by a single slow subscriber. That is why the queue could build up to 10 messages before eventually returning to 0. The message rate chart also showed a short burst around 10-11 messages per second, then returned to 0.00/s after the cloud broker had no more messages to deliver or acknowledge.
+
+## Bonus: Reflection and running at least three subscribers on cloud
+
+![Cloud RabbitMQ chart with three subscribers](assets/bonus-cloud-slow-subsriber-chart-with-3-console-open.png.png)
+
+![Cloud subscriber console 1](assets/bonus-cloud-subscriber-console-1.png)
+
+![Cloud subscriber console 2](assets/bonus-cloud-subscriber-console-2.png)
+
+![Cloud subscriber console 3](assets/bonus-cloud-subscriber-console-3.png)
+
+In this cloud experiment, I opened three subscriber consoles connected to the same RabbitMQ broker on Google Cloud. RabbitMQ showed 8 connections, 8 channels, 1 queue, and 3 consumers. The 3 consumers indicate that the three subscriber processes were all listening to the same `user_created` queue, so RabbitMQ could distribute messages among them.
+
+The queued message chart rose to 10 and then returned to 0. Compared with the single slow subscriber experiment, the queue drained faster because the work was shared by three subscribers. Each subscriber still waited one second before processing a message, but RabbitMQ did not depend on only one consumer anymore.
+
+The message rate chart also reached around 10 messages per second during the burst, then returned to 0.00/s after all messages were delivered and acknowledged. This shows that adding more subscribers can improve throughput and reduce the time messages spend waiting in the queue, even when each subscriber is individually slow.
+
+Looking at the code, the publisher and subscriber can still be improved by moving the AMQP URL into an environment variable so switching between local RabbitMQ and cloud RabbitMQ does not require editing source code. The publisher can also be improved by generating the sample messages from a list instead of repeating similar publish logic. On the subscriber side, setting a prefetch limit would make the distribution of messages across multiple slow subscribers more controlled and predictable.
