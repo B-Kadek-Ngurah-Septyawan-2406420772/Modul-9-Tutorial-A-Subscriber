@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_executor(tokio_executor_trait::Tokio::current())
         .with_reactor(async_reactor_trait::AsyncIo);
 
-    let connection = Connection::connect("amqp://guest:guest@127.0.0.1:5672", options).await?;
+    let connection = Connection::connect("amqp://awan:password123@34.34.223.148:5672", options).await?;
     let channel = connection.create_channel().await?;
 
     channel
