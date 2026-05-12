@@ -5,6 +5,7 @@ use lapin::{
     types::FieldTable,
     Connection, ConnectionProperties,
 };
+use tokio::time::{sleep, Duration};
 
 #[derive(Debug, Clone, BorshDeserialize, BorshSerialize)]
 pub struct UserCreatedEventMessage {
@@ -51,6 +52,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return;
             }
         };
+
+        let ten_millis = Duration::from_millis(1000);
+        sleep(ten_millis).await;
 
         match UserCreatedEventMessage::try_from_slice(&delivery.data) {
             Ok(message) => {
