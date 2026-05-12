@@ -19,3 +19,19 @@ In this experiment, the subscriber is intentionally slowed down by adding a one-
 The total number of queued messages depends on how many times the publisher is executed and how fast the subscriber can process messages at that moment. In my chart, the queue first reached 10 messages, then gradually went back to 0 after the subscriber processed them. After running the publisher again, the queue rose to 5 messages, then returned to 0 again. This happened because one publisher run sends five messages, while the slow subscriber consumes them one by one with a delay.
 
 This shows why a message broker is useful in an event-driven architecture. The publisher does not need to wait for the slow subscriber to finish processing every request. RabbitMQ becomes a buffer between them, so incoming events can wait safely in the queue until the subscriber is ready to process them.
+
+## Reflection and running at least three subscribers
+
+![RabbitMQ chart with three subscribers](assets/slow-subsriber-chart-with-3-console-open.png)
+
+![Subscriber console 1](assets/subscriber-console-1.png)
+
+![Subscriber console 2](assets/subscriber-console-2.png)
+
+![Subscriber console 3](assets/subscriber-console-3.png)
+
+In this experiment, I opened three subscriber consoles at the same time. RabbitMQ showed 3 connections, 3 channels, 3 consumers, and 1 queue, which means all three subscriber processes were connected to the same `user_created` queue. When the publisher was executed quickly, the total queued messages rose to 10, then returned to 0 after the messages were processed.
+
+The queue decreased faster than the previous slow-subscriber experiment because the messages were distributed to three subscribers instead of only one. Each subscriber still has a one-second delay, but RabbitMQ can deliver different messages to different consumers, so the total processing work is shared. The message rate chart also shows a short spike, with publish and acknowledgement activity rising during the burst and then going back to 0.00/s after the queue became empty.
+
+From the publisher code, one improvement is to avoid hardcoding repeated event data and create the messages from a collection or helper function. From the subscriber code, one useful improvement is to make the AMQP URL configurable through an environment variable instead of hardcoding `amqp://guest:guest@127.0.0.1:5672`. Another improvement is to configure message prefetch, for example one unacknowledged message per subscriber, so RabbitMQ distributes work more fairly when subscribers are slow.
